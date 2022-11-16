@@ -17,14 +17,19 @@ class Receiver(threading.Thread):
         def iterfunc(f, qu):
             while self.flag:
                 self.flag = False
-                for s in senders:
+                for s in self.senders:
                     if s.is_alive():
                         self.flag = True
-                if time.time() > self.start_time + self.timeout:
+                if (not self.flag) and time.time() > self.start_time + self.timeout:
                     return
-                print(f(qu.get(False)))
+                if not qu.empty():
+                    val = qu.get(False)
+                    print(f"Receiver: f({val}) = {f(val)}")
 
-        super().__init__(target=iterfunc, args=(self.queue, self.queue))
+        super().__init__(target=iterfunc, args=(self.func, self.queue))
+
+    def add_sender(self, sender):
+        self.senders.append(sender)
 
 
 class Sender(threading.Thread):
@@ -34,14 +39,18 @@ class Sender(threading.Thread):
 
         def iterfunc(qu):
             for i in range(n):
-                qu.put(random.randint(0, 1000))
-                time.sleep(random.randint(0, 20))
+                val = random.randint(0, 1000)
+                qu.put(val, block=False)
+                print(f"Sender: send value {val}")
+                time.sleep(random.randint(0, 10))
 
         super().__init__(target=iterfunc, args=(self.queue, ))
+        self.receiver.add_sender(self)
 
 
 q = queue.Queue(1024)
 receiver = Receiver(q, math.sin, 10)
-receiver.start()
 for i in range(10):
-    Sender(q, random.randint(1, 10), receiver).start()
+    s = Sender(q, 5, receiver)
+    s.start()
+receiver.start()
