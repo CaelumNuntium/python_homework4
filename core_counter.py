@@ -3,9 +3,9 @@ import time
 import math
 
 
-def slow_func(a, b):
+def slow_func(n):
     s = 0
-    for i in range(math.floor(a), math.ceil(b)):
+    for i in range(math.floor(n)):
         s += 1
     return s
 
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     while True:
         processes = []
         for i in range(res):
-            p = Process(target=slow_func, args=(i * size / res, (i + 1) * size / res))
+            p = Process(target=slow_func, args=(size / res, ))
             processes.append(p)
         for p in processes:
             p.start()
