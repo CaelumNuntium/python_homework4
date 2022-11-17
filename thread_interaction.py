@@ -6,13 +6,11 @@ import time
 
 
 class Receiver(threading.Thread):
-    def __init__(self, q, func, timeout):
+    def __init__(self, q, func):
         self.func = func
         self.queue = q
         self.senders = []
         self.flag = True
-        self.start_time = time.time()
-        self.timeout = timeout
 
         def iterfunc(f, qu):
             while self.flag:
@@ -20,8 +18,6 @@ class Receiver(threading.Thread):
                 for s in self.senders:
                     if s.is_alive():
                         self.flag = True
-                if (not self.flag) and time.time() > self.start_time + self.timeout:
-                    return
                 if not qu.empty():
                     val = qu.get(False)
                     print(f"Receiver: f({val}) = {f(val)}")
@@ -39,17 +35,17 @@ class Sender(threading.Thread):
 
         def iterfunc(qu):
             for i in range(n):
+                time.sleep(random.randint(0, 10))
                 val = random.randint(0, 1000)
                 qu.put(val, block=False)
                 print(f"Sender: send value {val}")
-                time.sleep(random.randint(0, 10))
 
         super().__init__(target=iterfunc, args=(self.queue, ))
         self.receiver.add_sender(self)
 
 
-q = queue.Queue(1024)
-receiver = Receiver(q, math.sin, 10)
+q = queue.Queue(50)
+receiver = Receiver(q, math.sin)
 for i in range(10):
     s = Sender(q, 5, receiver)
     s.start()
